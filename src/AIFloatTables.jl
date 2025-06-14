@@ -9,6 +9,22 @@ const V16  = Vector{UInt16}
 const V32 = Vector{Float32}
 const V64 = Vector{Float64}
 
+#=
+julia> @sprintf("%#04x",0x25)
+"0x25"
+
+julia> @sprintf("%#04x",0x5)
+"0x05"
+
+rstrip0(x) = rstrip(@sprintf("%.7f",x),'0') * (isinteger(x) ? '0' : "")
+=#
+
+hex_formatter = (v, i, j) -> ifelse(isa(v, UInt8), @sprintf("%#04x", v), @sprintf("%#06x", v))
+
+rstrip0(x) = rstrip(@sprintf("%.7f",x),'0') * (isinteger(x) ? '0' : "")
+float_formatter = (v, i, j) -> rstrip0(v)
+formatters = (hex_formatter, float_formatter)
+
 encoding = collect(0x00:0x0f);
 
 colnames = ["uf41", "uf42", "uf43", "uf44"];
@@ -47,15 +63,7 @@ pretty_table2  = pretty_table(coltable2; alignment=:l)
 pretty_string2 = pretty_table(String, coltable2);
 pretty_html2   = pretty_table(HTML, coltable2);
 
-#=
-julia> @sprintf("%#04x",0x25)
-"0x25"
 
-julia> @sprintf("%#04x",0x5)
-"0x05"
-
-rstrip0(x) = rstrip(@sprintf("%.7f",x),'0') * (isinteger(x) ? '0' : "")
-=#
 
 valuematrix = reshape(collect(Iterators.flatten(values)),(4^2,4)); 
 valuetable = Tables.table(valuematrix);
