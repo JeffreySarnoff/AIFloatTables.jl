@@ -1,6 +1,6 @@
 module AIFloatTables
 
-using Printf, Tables, DataFrames, CSV, PrettyTables
+using Printf, Tables, DataFrames, CSV, Latexify, PrettyTables
 using AIFloats
 
 
