@@ -43,11 +43,17 @@ nt4table2 = NamedTuple{Tuple(colsyms2), Tuple{V8,V64,V64,V64,V64}};
 nt2 = nt4table2(values2);
 coltable2 = columntable(nt2);
 
+pretty_table2  = pretty_table(coltable2; alignment=:l)
 pretty_string2 = pretty_table(String, coltable2);
 pretty_html2   = pretty_table(HTML, coltable2);
 
+#=
+julia> @sprintf("%#04x",0x25)
+"0x25"
 
-
+julia> @sprintf("%#04x",0x5)
+"0x05"
+=#
 
 valuematrix = reshape(collect(Iterators.flatten(values)),(4^2,4)); 
 valuetable = Tables.table(valuematrix);
