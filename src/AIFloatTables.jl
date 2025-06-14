@@ -54,7 +54,7 @@ julia> @sprintf("%#04x",0x25)
 julia> @sprintf("%#04x",0x5)
 "0x05"
 
-rstrip0(x) = (!isinteger(x) ? rstrip(@sprintf("%.7f",x),'0') : rstrip(@sprintf("%.7f",x), '0') * '0')
+rstrip0(x) = rstrip(@sprintf("%.7f",x),'0') * (isinteger(x) ? '0' : "")
 =#
 
 valuematrix = reshape(collect(Iterators.flatten(values)),(4^2,4)); 
