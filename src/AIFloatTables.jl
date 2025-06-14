@@ -1,7 +1,7 @@
 module AIFloatTables
 
 using Printf, Tables, DataFrames, CSV, Latexify, PrettyTables
-using AIFloats
+using AIFloats, BFloat16s
 
 const U8   = Vector{UInt8}
 const U16  = Vector{UInt16}
