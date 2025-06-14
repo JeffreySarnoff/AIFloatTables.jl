@@ -19,9 +19,10 @@ julia> @sprintf("%#04x",0x5)
 rstrip0(x) = rstrip(@sprintf("%.7f",x),'0') * (isinteger(x) ? '0' : "")
 =#
 
-hex_formatter = (v, i, j) -> ifelse(isa(v, UInt8), @sprintf("%#04x", v), @sprintf("%#06x", v))
+hex_formatter = (v, i, j) -> j==1 ? ifelse(isa(v, UInt8), @sprintf("%#04x", v), @sprintf("%#06x", v)) : v
 
 rstrip0(x) = rstrip(@sprintf("%.7f",x),'0') * (isinteger(x) ? '0' : "")
+
 float_formatter = (v, i, j) -> rstrip0(v)
 formatters = (hex_formatter, float_formatter)
 
@@ -62,7 +63,6 @@ coltable2 = columntable(nt2);
 pretty_table2  = pretty_table(coltable2; alignment=:l)
 pretty_string2 = pretty_table(String, coltable2);
 pretty_html2   = pretty_table(HTML, coltable2);
-
 
 
 valuematrix = reshape(collect(Iterators.flatten(values)),(4^2,4)); 
