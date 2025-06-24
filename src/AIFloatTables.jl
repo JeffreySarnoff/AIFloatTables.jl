@@ -23,15 +23,10 @@ rstrip0(x) = rstrip(@sprintf("%.7f",x),'0') * (isinteger(x) ? '0' : "")
 =#
 
 hex_formatter = (v, i, j) -> j==1 ? ifelse(isa(v, UInt8), @sprintf("%#04x", v), @sprintf("%#06x", v)) : v
-float_formatter = (v, i, j) ->  string(@sprintf("%#a",v)," (", @sprintf("%#g", v), ") ")
-formatters = (v, i, j) -> ifelse(j==1, hex_formmater(v), float_formatter(v))
-
-
+# float_formatter = (v, i, j) ->  string(@sprintf("%#a",v)," (", @sprintf("%#g", v), ") ")
+# formatters = (v, i, j) -> ifelse(j==1, hex_formmater(v), float_formatter(v))
 formats=(v,i,j)->ifelse(j>1, round(v; sigdigits=16), hex_formatter(v,i,j))
-rstrip0(x) = rstrip(@sprintf("%.7f",x),'0') * (isinteger(x) ? '0' : "")
-
-
-formatters = (hex_formatter, float_formatter, float_formatter, float_formatter, float_formatter);
+# rstrip0(x) = rstrip(@sprintf("%.7f",x),'0') * (isinteger(x) ? '0' : "")
 
 encoding = collect(0x00:0x0f);
 
@@ -50,6 +45,19 @@ nt = nt4table(values);
 coltable = columntable(nt)
 
 pretty_table(coltable; formatters = formats, alignment=:l);
+
+
+function codes_floats(Bits, Signed, Extended)
+   typed = type_codes_values(Bits, Signed, Extended)
+   encodings = typed[1].codes
+   fpvalues = map(floats, typed)
+   return encodings, fpvalues
+end
+
+function type_codes_values(Bits, Signed, Extended)
+    SigBits = Signed ? Bits - 1 : Bits
+    [AIFloat(Bits,Sig; signed=Signed, extended=Extended) for Sig in 1:SigBits]
+end
 
 pretty_string = pretty_table(String, coltable; header = colnames);
 pretty_html   = pretty_table(HTML, coltable; header = colnames);
