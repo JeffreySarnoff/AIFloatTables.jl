@@ -1,4 +1,8 @@
+
+using AIFloats
 using AIFloats: typeforfloat, typeforcode
+using Tables, CSV, PrettyTables
+
 
 function gencolumns(bits, sigbits=0; SignedFloat=false, UnsignedFloat=false, FiniteFloat=false, ExtendedFloat=false)
     sigbitsmax = bits - SignedFloat
@@ -148,9 +152,10 @@ end
 about_exponents(T) = (bias = expBias(T), exponents = 1 + AIFloats.expMax(T) - AIFloats.expMin(T), 
             exponent_min = AIFloats.expMin(T), exponent_max = AIFloats.expMax(T))
 
-about_subnormals(T) =
+about_prenormals(T) =
             (prenormal_magnitudes = nPrenormalMagnitudes(T),
-             subnormal_magnitudes = nSubnormalMagnitudes(T), subnormal_values = AIFloats.nSubnormalValues(T),
+             subnormal_magnitudes = nSubnormalMagnitudes(T), 
+             subnormal_values = AIFloats.nSubnormalValues(T),
              subnormal_min = subnormalMagnitudeMin(T), subnormal_max = subnormalMagnitudeMax(T))
 
 about_normals(T) =

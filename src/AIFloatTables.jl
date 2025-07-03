@@ -1,5 +1,7 @@
 module AIFloatTables
 
+export gencsv, genbigcsv, genhexcsv, about
+
 using Printf, Tables, DataFrames, CSV, Latexify, PrettyTables
 using AIFloats, BFloat16s, Quadmath
 

@@ -1,6 +1,6 @@
 basefiledir = s"C:/JuliaCon/juliacon/tables/"
 
-for bits in 2:15
+for bits in 2:10
     println("bits = $bits")
     decbits = string(bits)
     hexbits = uppercase(string(bits; base=16))
@@ -65,3 +65,6 @@ for bits in 2:15
     genhexcsv(bits; filedir, filename, SignedFloat, ExtendedFloat)
 end
 
+for bits in 2:15
+#    
+end
