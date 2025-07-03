@@ -144,3 +144,21 @@ function genhexcsv(bits, sigbits=0; filedir, filename, SignedFloat=false, Unsign
     end
 end
 
+
+about_exponents(T) = (bias = expBias(T), exponents = 1 + AIFloats.expMax(T) - AIFloats.expMin(T), 
+            exponent_min = AIFloats.expMin(T), exponent_max = AIFloats.expMax(T))
+
+about_subnormals(T) =
+            (prenormal_magnitudes = nPrenormalMagnitudes(T),
+             subnormal_magnitudes = nSubnormalMagnitudes(T), subnormal_values = AIFloats.nSubnormalValues(T),
+             subnormal_min = subnormalMagnitudeMin(T), subnormal_max = subnormalMagnitudeMax(T))
+
+about_normals(T) =
+            (normal_magnitudes = nNormalMagnitudes(T), normal_values = AIFloats.nNormalValues(T),
+             normal_min = normalMagnitudeMin(T), normal_max = normalMagnitudeMax(T))
+
+about(T) = (
+    exponents = about_exponents(T),
+    prenormals = about_prenormals(T),
+    normals = about_normals(T)
+)
