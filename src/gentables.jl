@@ -3,10 +3,129 @@ using AIFloats
 using AIFloats: typeforfloat, typeforcode
 using Tables, CSV, PrettyTables
 
+#=
+float64 works for 
+:signed 
+    bits=2:12
+    bits=13, sigbits=3:12
+    bits=14, sigbits=4:13
+    bits=15, sigbits=5:14
+:unsigned 
+    bits=2:11
+    bits=12, sigbits=2:12
+    bits=13, sigbits=3:13
+    bits=14, sigbits=4:14
+    bits=15, sigbits=5:15
+
+float32 works for 
+:signed 
+    bits=2:9
+    bits=10, sigbits=2:9
+    bits=11, sigbits=3:10
+    bits=12, sigbits=4:11
+    bits=13, sigbits=5:12
+    bits=14, sigbits=6:13
+    bits=15, sigbits=7:14   
+:unsigned 
+    bits=2:8
+    bits=9,  sigbits=2:9
+    bits=10, sigbits=3:10
+    bits=11, sigbits=4:11
+    bits=12, sigbits=5:12
+    bits=13, sigbits=6:13
+    bits=14, sigbits=7:14
+    bits=15, sigbits=8:15   
+    
+float16 works for 
+:signed 
+    bits=2:6
+    bits=7,  sigbits=2:6
+    bits=8,  sigbits=3:7
+    bits=9,  sigbits=4:8
+    bits=10, sigbits=5:9
+    bits=11, sigbits=6:10
+    bits=12, sigbits=7:11
+    bits=13, none
+    bits=14, none
+    bits=15, none
+:unsigned 
+    bits=2:5
+    bits=6,  sigbits=2:6
+    bits=7,  sigbits=3:7
+    bits=8,  sigbits=4:8
+    bits=9,  sigbits=5:9
+    bits=10, sigbits=6:10
+    bits=11, sigbits=7:11
+    bits=12, none
+    bits=13, none
+    bits=14, none
+    bits=15, none
+
+BFloat16 works for 
+:signed 
+    bits=2:9
+    bits=10, none
+    bits=11, none
+    bits=12, none
+    bits=13, none
+    bits=14, none
+    bits=15, none
+:unsigned 
+    bits=2:8
+    bits= 9, none
+    bits=10, none
+    bits=11, none
+    bits=12, none
+    bits=13, none
+    bits=14, none
+    bits=15, none
+
+=#
+function float64works(xs::Vector{Float128})
+    ys = filter(isfinite, xs)
+    ys64 = map(Float64, ys)
+    ys128 = map(Float128, ys64)
+    all(ys .=== ys128)
+end
+
+function float32works(xs::Vector{T}) where {T<:Union{Float64,Float128}}
+    ys = filter(isfinite, xs)
+    ys32 = map(Float32, ys)
+    ysT = map(T, ys32)
+    all(ys .=== ysT)
+end
+
+function float16works(xs::Vector{T}) where {T<:Union{Float32, Float64,Float128}}
+    ys = filter(isfinite, xs)
+    ys16 = map(Float16, ys)
+    ysT = map(T, ys16)
+    all(ys .=== ysT)
+end
+
+function bfloat16works(xs::Vector{T}) where {T<:Union{Float32, Float64,Float128}}
+    if !float32works(xs)
+        false
+    else
+        ys = map(Float32, xs)
+        ys16 = map(BFloat16, ys)
+        ysT = map(T, ys16)
+        all(xs .=== ysT)
+    end
+end
+
+function Quadmath.Float128(x::BFloat16)
+    y = Float64(x)
+    Float128(y)
+end
+
+
 
 function gencolumns(bits, sigbits=0; SignedFloat=false, UnsignedFloat=false, FiniteFloat=false, ExtendedFloat=false)
     sigbitsmax = bits - SignedFloat
-    formats = [AIFloat(bits,i;SignedFloat, UnsignedFloat, FiniteFloat, ExtendedFloat) for i in 1:sigbitsmax]
+    signedness = SignedFloat ? :signed : :unsigned
+    finiteness = FiniteFloat ? :finite : :extended
+
+    formats = [AIFloat(bits,i, signedness, finiteness) for i in 1:sigbitsmax]
     code = codes(formats[1])
     values = map(floats, formats)
     (; code, values)
@@ -100,7 +219,41 @@ function gencsv(bits, sigbits=0; filedir, filename, SignedFloat=false, UnsignedF
     end
 end
 
+#=
+loat64 works for 
+:signed 
+    bits=2:12
+    bits=13, sigbits=3:12
+    bits=14, sigbits=4:13
+    bits=15, sigbits=5:14
+:unsigned 
+    bits=2:11
+    bits=12, sigbits=2:12
+    bits=13, sigbits=3:13
+    bits=14, sigbits=4:14
+    bits=15, sigbits=5:15
+=#
 function genbigcsv(bits, sigbits=0; filedir, filename, SignedFloat=false, UnsignedFloat=false, FiniteFloat=false, ExtendedFloat=false)
+    adjust = SignedFloat ? 1 : 0
+
+    if SignedFloat
+        if (bits <= 12 ||
+            (bits == 13 && sigbits >= 3) ||
+            (bits == 14 && sigbits >= 4) ||
+            (bits == 15 && sigbits >= 5))
+            return gencsv(bits, sigbits; filedir, filename, SignedFloat, UnsignedFloat, FiniteFloat, ExtendedFloat)
+        end
+    end
+    if UnsignedFloat
+        if (bits <= 11 ||
+            (bits == 12 && sigbits >= 2) ||
+            (bits == 13 && sigbits >= 3) ||
+            (bits == 14 && sigbits >= 4) ||
+            (bits == 15 && sigbits >= 5))
+            return gencsv(bits, sigbits; filedir, filename, SignedFloat, UnsignedFloat, FiniteFloat, ExtendedFloat)
+        end
+    end
+
     sigbitsmax = bits - SignedFloat
     colsyms = gencolsyms(bits; SignedFloat, UnsignedFloat, FiniteFloat, ExtendedFloat)
     coltypes = gencoltypes(bits; SignedFloat, UnsignedFloat, FiniteFloat, ExtendedFloat)
