@@ -1,6 +1,6 @@
 
-using AIFloats
-using AIFloats: typeforfloat, typeforcode
+using FloatsForAI
+using FloatsForAI: typeforfloat, typeforcode
 using Tables, CSV, PrettyTables
 
 #=
@@ -88,37 +88,33 @@ function float64works(xs::Vector{Float128})
     all(ys .=== ys128)
 end
 
+float64works(x::Float64) = true
+function float64works(x::Float128)
+    !isfinite(x) && return true
+    y = Float64(x)
+    z = Float128(y)
+    x === z
+end
+
+float64works(xs::Vector{Float64}) = (1, length(xs))
+function float64idxs(xs::Vector{Float128})
+    ys = map(float64works, xs)
+    all(ys) && return (1, length(ys)), length(ys)
+    !any(ys) && return (0, 0), 0
+    notys = map(!, ys)
+    ys1 = @view(ys[2:end])
+    lo = 1+findfirst(ys1)
+    notys1 = @view(notys[lo:end])
+    hi = (lo-1)+findfirst(notys1)
+    (lo, hi),hi-lo+1
+end
+
 function float32works(xs::Vector{T}) where {T<:Union{Float64,Float128}}
     ys = filter(isfinite, xs)
     ys32 = map(Float32, ys)
     ysT = map(T, ys32)
     all(ys .=== ysT)
 end
-
-function float16works(xs::Vector{T}) where {T<:Union{Float32, Float64,Float128}}
-    ys = filter(isfinite, xs)
-    ys16 = map(Float16, ys)
-    ysT = map(T, ys16)
-    all(ys .=== ysT)
-end
-
-function bfloat16works(xs::Vector{T}) where {T<:Union{Float32, Float64,Float128}}
-    if !float32works(xs)
-        false
-    else
-        ys = map(Float32, xs)
-        ys16 = map(BFloat16, ys)
-        ysT = map(T, ys16)
-        all(xs .=== ysT)
-    end
-end
-
-function Quadmath.Float128(x::BFloat16)
-    y = Float64(x)
-    Float128(y)
-end
-
-
 
 function gencolumns(bits, sigbits=0; SignedFloat=false, UnsignedFloat=false, FiniteFloat=false, ExtendedFloat=false)
     sigbitsmax = bits - SignedFloat
@@ -161,7 +157,7 @@ code_formatter(bits) = bits <= 8 ? ft_printf("%#04x", [1]) : ft_printf("%#06x", 
 float_format(col) = ft_round(15, col)
 hex_format(col) = ft_printf("%a", col)
 float_formatters(n) = (ft_printf("%#04x", [1]),ft_printf("%.17g", collect(2:(n+1))))
-bigfloat_formatters(n) = (ft_printf("%#04x", [1]),ft_printf("%.36g", collect(2:(n+1))))
+bigfloat_formatters(n) = (ft_printf("%#04x", [1]),ft_printf("%.27g", collect(2:(n+1))))
 hex_formatters(n) = (ft_printf("%#04x", [1]),ft_printf("%a", collect(2:(n+1))))
 floathex_formatters(n) = (i->float_format(i), hex_format(i+1))
 
@@ -216,19 +212,19 @@ function gencsv(bits, sigbits=0; filedir, filename, SignedFloat=false, UnsignedF
     fullpath = joinpath(filedir, filename)
     open(fullpath, "w") do io
         write(io, csv)
-    end
+    end  
 end
 
 #=
-loat64 works for 
+float64 works for 
 :signed 
     bits=2:12
-    bits=13, sigbits=3:12
-    bits=14, sigbits=4:13
-    bits=15, sigbits=5:14
+    bits=13, sigbits=2:12, 13p1=[975:3073] (2099 values),
+    bits=14, sigbits=3:13, 14p1=[3023, 5121] (2099 values), s14p2=[1951,6145] (4195 values)
+    bits=15, sigbits=4:14, 15p1=[7119, 9317] (2099 values), s15p2=[6047,10241] (4195 values)
 :unsigned 
     bits=2:11
-    bits=12, sigbits=2:12
+    bits=12, sigbits=2:12, 12p1=[975:3073] (2099 values) 
     bits=13, sigbits=3:13
     bits=14, sigbits=4:14
     bits=15, sigbits=5:15
