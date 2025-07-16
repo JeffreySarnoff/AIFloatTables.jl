@@ -1,6 +1,6 @@
 
-using FloatsForAI
-using FloatsForAI: typeforfloat, typeforcode
+using AIFloats
+using AIFloats: typeforfloat, typeforcode
 using Tables, CSV, PrettyTables
 
 #=
@@ -81,50 +81,28 @@ BFloat16 works for
     bits=15, none
 
 =#
-function float64works(xs::Vector{Float128})
-    ys = filter(isfinite, xs)
-    ys64 = map(Float64, ys)
-    ys128 = map(Float128, ys64)
-    all(ys .=== ys128)
-end
-
-float64works(x::Float64) = true
-function float64works(x::Float128)
-    !isfinite(x) && return true
-    y = Float64(x)
-    z = Float128(y)
-    x === z
-end
-
-float64works(xs::Vector{Float64}) = (1, length(xs))
-function float64idxs(xs::Vector{Float128})
-    ys = map(float64works, xs)
-    all(ys) && return (1, length(ys)), length(ys)
-    !any(ys) && return (0, 0), 0
-    notys = map(!, ys)
-    ys1 = @view(ys[2:end])
-    lo = 1+findfirst(ys1)
-    notys1 = @view(notys[lo:end])
-    hi = (lo-1)+findfirst(notys1)
-    (lo, hi),hi-lo+1
-end
-
-function float32works(xs::Vector{T}) where {T<:Union{Float64,Float128}}
-    ys = filter(isfinite, xs)
-    ys32 = map(Float32, ys)
-    ysT = map(T, ys32)
-    all(ys .=== ysT)
-end
 
 function gencolumns(bits, sigbits=0; SignedFloat=false, UnsignedFloat=false, FiniteFloat=false, ExtendedFloat=false)
-    sigbitsmax = bits - SignedFloat
+    if !iszero(sigbits)
+        sigbitsmin = sigbitsmax = sigbits
+    else
+        sigbitsmin = 1
+        sigbitsmax = bits - SignedFloat
+    end    
+
+    C = typeforcode(bits)
+    F = typeforfloat(bits)
+
     signedness = SignedFloat ? :signed : :unsigned
     finiteness = FiniteFloat ? :finite : :extended
+    
+    formats = [AIFloat(bits,i, signedness, finiteness) for i in sigbitsmin:sigbitsmax]
 
-    formats = [AIFloat(bits,i, signedness, finiteness) for i in 1:sigbitsmax]
-    code = codes(formats[1])
-    values = map(floats, formats)
-    (; code, values)
+    codemap = map(codes, formats[1])
+    valuemap = map(floats, formats)
+    encoding = map(C, codemap)
+    values = map(x->F.(x), valuemap)
+    (; encoding, values)
 end
 
 function gencolnames(bits, sigbits=0; SignedFloat=false, UnsignedFloat=false, FiniteFloat=false, ExtendedFloat=false)
@@ -153,7 +131,7 @@ function gencoltypes(bits, sigbits=0; SignedFloat=false, UnsignedFloat=false, Fi
     Tuple{[c1, fill(cf, bits - SignedFloat)...]...}
 end
 
-code_formatter(bits) = bits <= 8 ? ft_printf("%#04x", [1]) : ft_printf("%#06x", [1])
+code_formatter(bits) = bits <= 8 ? ft_printf("0x%002x", [1]) : ft_printf("0x%00004x", [1])
 float_format(col) = ft_round(15, col)
 hex_format(col) = ft_printf("%a", col)
 float_formatters(n) = (ft_printf("%#04x", [1]),ft_printf("%.17g", collect(2:(n+1))))
@@ -196,7 +174,7 @@ function gencsv(bits, sigbits=0; filedir, filename, SignedFloat=false, UnsignedF
     colsyms = gencolsyms(bits; SignedFloat, UnsignedFloat, FiniteFloat, ExtendedFloat)
     coltypes = gencoltypes(bits; SignedFloat, UnsignedFloat, FiniteFloat, ExtendedFloat)
     colvalues = gencolumns(bits; SignedFloat, UnsignedFloat, FiniteFloat, ExtendedFloat)
-    vals = (colvalues.code, colvalues.values...)
+    vals = (colvalues.encoding, colvalues.values...)
     fmts = genformats(bits; SignedFloat, UnsignedFloat, FiniteFloat, ExtendedFloat)
 
     nt4table = NamedTuple{colsyms, coltypes}
@@ -205,14 +183,14 @@ function gencsv(bits, sigbits=0; filedir, filename, SignedFloat=false, UnsignedF
 
     str = pretty_table(String, coltable; formatters = fmts, alignment=:l, tf=tf);
     strs = map(string, split(str, '\n'))
-    prepstrs = vcat(strs[1],strs[5:end])
+    prepstrs = vcat(strs[1],strs[4:end])
     cleanstrs = map(x->x[2:end-1], prepstrs)
     csv  = join(cleanstrs, '\n')
 
     fullpath = joinpath(filedir, filename)
     open(fullpath, "w") do io
         write(io, csv)
-    end  
+    end
 end
 
 #=
@@ -254,7 +232,7 @@ function genbigcsv(bits, sigbits=0; filedir, filename, SignedFloat=false, Unsign
     colsyms = gencolsyms(bits; SignedFloat, UnsignedFloat, FiniteFloat, ExtendedFloat)
     coltypes = gencoltypes(bits; SignedFloat, UnsignedFloat, FiniteFloat, ExtendedFloat)
     colvalues = gencolumns(bits; SignedFloat, UnsignedFloat, FiniteFloat, ExtendedFloat)
-    vals = (colvalues.code, colvalues.values...)
+    vals = (colvalues.encoding, colvalues.values...)
     fmts = genbigformats(bits; SignedFloat, UnsignedFloat, FiniteFloat, ExtendedFloat)
 
     nt4table = NamedTuple{colsyms, coltypes}
@@ -263,7 +241,7 @@ function genbigcsv(bits, sigbits=0; filedir, filename, SignedFloat=false, Unsign
 
     str = pretty_table(String, coltable; formatters = fmts, alignment=:l, tf=tf);
     strs = map(string, split(str, '\n'))
-    prepstrs = vcat(strs[1],strs[5:end])
+    prepstrs = vcat(strs[1],strs[4:end])
     cleanstrs = map(x->x[2:end-1], prepstrs)
     csv  = join(cleanstrs, '\n')
 
@@ -287,7 +265,7 @@ function genhexcsv(bits, sigbits=0; filedir, filename, SignedFloat=false, Unsign
 
     str = pretty_table(String, coltable; formatters = fmts, alignment=:l, tf=tf);
     strs = map(string, split(str, '\n'))
-    prepstrs = vcat(strs[1],strs[5:end])
+    prepstrs = vcat(strs[1],strs[4:end])
     cleanstrs = map(x->x[2:end-1], prepstrs)
     csv  = join(cleanstrs, '\n')
 
@@ -297,7 +275,7 @@ function genhexcsv(bits, sigbits=0; filedir, filename, SignedFloat=false, Unsign
     end
 end
 
-
+#=
 about_exponents(T) = (bias = expBias(T), exponents = 1 + AIFloats.expMax(T) - AIFloats.expMin(T), 
             exponent_min = AIFloats.expMin(T), exponent_max = AIFloats.expMax(T))
 
@@ -316,3 +294,4 @@ about(T) = (
     prenormals = about_prenormals(T),
     normals = about_normals(T)
 )
+=#

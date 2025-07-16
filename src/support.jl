@@ -4,6 +4,17 @@ Quadmath.Float128(str::String) = Float128(BigFloat(str))
 const float128safemin = Float128("9.16801933777423582810706196024241583e-2467")
 const float128safemax = Float128("5.45374067809707964731492122366891431e+2465")
 
+function commondenoms(xs)
+    qs = map(rationalize, xs)
+    qns = map(numerator, qs)
+    qds = map(denominator, qs)
+    dmax = round(Int,maximum(qds))
+    qds2 = map(x->round(Int, dmax/x), qds)
+    qns2 = qns .* qds2
+    res = map(x -> Rational(x,dmax), qns2)
+    map(x->(x,dmax), qns2)
+end
+
 function scalb(significand::F, binary_exponent::S) where {F<:AbstractFloat, S<:Signed}
     res = ldexp(significand, binary_exponent)
     fr, xp = frexp(res)

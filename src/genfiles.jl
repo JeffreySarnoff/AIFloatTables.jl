@@ -1,8 +1,8 @@
-import FloatsForAI: AIFloat, codes, floats
+import AIFloats: AIFloat, codes, floats
 
 UnsignedFloat = SignedFloat = FiniteFloat = ExtendedFloat = true
 
-basefiledir = s"C:/JuliaCon/juliacon/floatsforai/"
+basefiledir = s"C:/JuliaCon/juliacon/AIFloats/"
 
 for bits in 2:8
     println("bits = $bits")
@@ -24,7 +24,6 @@ for bits in 2:8
     
     filedir = unsigned_dir
     cd(filedir)
-
     filename = fileprefix * "uf" * ".csv"
     isfile(filename) && rm(filename); println(filename)
     gencsv(bits; filedir, filename, UnsignedFloat, FiniteFloat)
@@ -34,7 +33,6 @@ for bits in 2:8
 
     filedir = unsigned_hex_dir
     cd(filedir)
-
     filename = fileprefix * "uf" * ".hex.csv"
     isfile(filename) && rm(filename); println(filename)
     genhexcsv(bits; filedir, filename, UnsignedFloat, FiniteFloat)
@@ -44,7 +42,6 @@ for bits in 2:8
 
     filedir = signed_dir
     cd(filedir)
-    
     filename = fileprefix * "sf" * ".csv"
     isfile(filename) && rm(filename); println(filename)
     gencsv(bits; filedir, filename, SignedFloat, FiniteFloat)
@@ -54,7 +51,6 @@ for bits in 2:8
 
     filedir = signed_hex_dir
     cd(filedir)
-
     filename = fileprefix * "sf" * ".hex.csv"
     isfile(filename) && rm(filename); println(filename)
     genhexcsv(bits; filedir, filename, SignedFloat, FiniteFloat)
@@ -62,7 +58,6 @@ for bits in 2:8
     isfile(filename) && rm(filename); println(filename)
     genhexcsv(bits; filedir, filename, SignedFloat, ExtendedFloat)
 end
-
 
 
 for bits in 9:10
