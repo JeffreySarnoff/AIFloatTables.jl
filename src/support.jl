@@ -1,8 +1,219 @@
-setprecision(BigFloat, 1024)
-Quadmath.Float128(str::String) = Float128(BigFloat(str))
+import Quadmath: Float128
 
-const float128safemin = Float128("9.16801933777423582810706196024241583e-2467")
-const float128safemax = Float128("5.45374067809707964731492122366891431e+2465")
+HugeFloat()    = setprecision(BigFloat, 4097)  
+BiggerFloat()  = setprecision(BigFloat, 512)
+LargeFloat()   = setprecision(BigFloat, 256)
+SmallerFloat() = setprecision(BigFloat, 196)
+
+code_fmt(bits) = (bits <= 8) ? "%000#4x" : "%00000#6x"
+
+code_map(bits) =
+   if (bits <= 8) 
+      seq->map(x->@sprintf("%000#4x", x), seq)
+   else
+       seq->map(x->@sprintf("%00000#6x", x), seq)
+   end  
+
+function gendeccolnames(bits, sigbits=0; SignedFloat=false, UnsignedFloat=false,FiniteFloat=false, ExtendedFloat=false)
+    sigbitsmax = bits - SignedFloat
+    prefix = "binary" * uppercase(string(bits; base=10)) * "p"
+    suffix = (SignedFloat ? "s" : "u") * (FiniteFloat ? "f" : "e")
+    ["code", [prefix * string(i) * suffix for i in 1:sigbitsmax]...]
+end
+
+
+
+
+K=5; 
+sf_values = [AIFloat(K, p, :signed, :finite) for p in 1:K-1];
+sf_floats = map(floats, sf_values);
+# sf_float_strs = map(v->map(x->@sprintf("%a",x)), sf_floats);
+
+sprintfa(x) = @sprintf("%a",x)
+
+function strprintfa(v::Vector{Vector{T}}) where {T}
+    res = []
+    for avec in v
+        t = map(x->sprintfa(x), avec)
+        push!(res, t)
+    end
+    res
+end
+
+sf_float_strs = strprintfa(sf_floats)
+
+code_s = codes(AIFloat(K,2,:unsigned,:finite));
+code_strs = code_map(K)(code_s);
+
+dir16 = sfdirs16[K]
+
+colnms = gendeccolnames(K; SignedFloat, FiniteFloat)
+colsyms = Tuple(map(Symbol, colnms));
+
+colvalues = [code_strs, sf_float_strs...]
+
+nt = NamedTuple{colsyms}(colvalues)
+
+using Tables, PrettyTables, CSV
+coltable = columntable(nt);
+
+tf = TextFormat(
+    up_right_corner     = ' ',
+    up_left_corner      = ' ',
+    bottom_left_corner  = ' ',
+    bottom_right_corner = ' ',
+    up_intersection     = ' ',
+    left_intersection   = ' ',
+    right_intersection  = ' ',
+    middle_intersection = ' ',
+    bottom_intersection = ' ',
+    column              = ',',
+    row                 = ' ',
+    hlines              = [:header]
+);
+
+str = pretty_table(String, coltable; alignment=:l, tf=tf);
+strs = map(string, split(str, '\n'));
+prepstrs = vcat(strs[1],strs[4:end]);
+cleanstrs = map(x->x[2:end-1], prepstrs);
+csv  = join(cleanstrs, '\n');
+
+
+
+
+using Tables, PrettyTables, CSV
+
+
+tf = TextFormat(
+    up_right_corner     = ' ',
+    up_left_corner      = ' ',
+    bottom_left_corner  = ' ',
+    bottom_right_corner = ' ',
+    up_intersection     = ' ',
+    left_intersection   = ' ',
+    right_intersection  = ' ',
+    middle_intersection = ' ',
+    bottom_intersection = ' ',
+    column              = ',',
+    row                 = ' ',
+    hlines              = [:header]
+);
+
+# sfdirs16 = ["", "C:\\JuliaCon\fo\AIFloats\\base16\\signed\\finite\\bits2", "C:\\JuliaCon\\AIFloats\\base16\\signed\\finite\\bits3", "C:\\JuliaCon\\AIFloats\\base16\\signed\\finite\\bits4", "C:\\JuliaCon\\AIFloats\\base16\\signed\\finite\\bits5", "C:\\JuliaCon\\AIFloats\\base16\\signed\\finite\\bits6", "C:\\JuliaCon\\AIFloats\\base16\\signed\\finite\\bits7", "C:\\JuliaCon\\AIFloats\\base16\\signed\\finite\\bits8", "C:\\JuliaCon\\AIFloats\\base16\\signed\\finite\\bits9", "C:\\JuliaCon\\AIFloats\\base16\\signed\\finite\\bits10", "C:\\JuliaCon\\AIFloats\\base16\\signed\\finite\\bits11", "C:\\JuliaCon\\AIFloats\\base16\\signed\\finite\\bits12", "C:\\JuliaCon\\AIFloats\\base16\\signed\\finite\\bits13", "C:\\JuliaCon\\AIFloats\\base16\\signed\\finite\\bits14", "C:\\JuliaCon\\AIFloats\\base16\\signed\\finite\\bits15"]
+
+basefile_dir = abspath(joinpath("C:/JuliaCon", "AIFloats"))
+for K in 2:4
+    println(K)
+    for signedness in (:unsigned, :signed)
+        for domain in (:finite, :extended)
+            for is16 in (true, false)
+                if is16
+                    filedir = joinpath(basefile_dir, "base16")
+                else
+                    filedir = joinpath(basefile_dir, "base10")
+                end
+                println(filedir)
+                if signedness == :signed
+                    filedir = joinpath(filedir, "signed")
+                else
+                    filedir = joinpath(filedir, "unsigned")
+                end
+                if domain == :finite
+                    filedir = joinpath(filedir, "finite")
+                else
+                    filedir = joinpath(filedir, "extended")
+                end
+                thisdir, csv = makecsv(K, signedness, domain; is16)
+                if is16
+                    filename = string("binary",K,".16.csv")
+                else
+                    filename = string("binary",K,".10.csv")
+                end
+
+                println("thisdir = $thisdir")
+
+                fullpath = joinpath(thisdir, filedir)
+
+                 #    filedir  = dir4file()
+                 #    fullpath = joinpath(filedir, filname); println(fullpath)
+                        open(thisdir, "w") do io
+                        write(io, csv)
+                    end
+            end
+        end
+    end
+end
+
+function makecsv(K, signedness, domain; is16=false)
+
+    SignedFloat = ExtendedFloat = FiniteFloat = UnsignedFloat = true
+    signedness == :signed && (UnsignedFloat = false;);
+    signedness == :unsigned && (SignedFloat = false;);
+    domain == :finite && (ExtendedFloat = false;);
+    domain == :extended && (UnsignedFloat = false;);
+
+    if UnsignedFloat
+        if FiniteFloat
+            thisdir = (is16) ? ufdirs16[K] : ufdirs10[K]
+        else
+            thisdir = (is16) ? uedirs16[K] : uedirs10[K]
+        end
+    else
+        if FiniteFloat
+            thisdir = (is16) ? sfdirs16[K] : sfdirs10[K]
+        else
+            thisdir = (is16) ? sedirs16[K] : sedirs10[K]
+        end
+    end
+
+    vals = [AIFloat(K, p, signedness, domain) for p in 1:K-SignedFloat];
+    float_vals = map(floats, vals);
+
+    float_strs = strprintfa(float_vals)
+
+    code_s = codes(AIFloat(K,2,:unsigned,:finite));
+    code_strs = code_map(K)(code_s);
+
+    if hexnames
+        colnms = genhexcolnames(K; SignedFloat, FiniteFloat)
+    else
+        colnms = gendeccolnames(K; SignedFloat, FiniteFloat)
+    end
+
+    colsyms = Tuple(map(Symbol, colnms));
+    colvalues = [code_strs, float_strs...];
+
+    nt = NamedTuple{colsyms}(colvalues);
+
+    coltable = columntable(nt);
+    str = pretty_table(String, coltable; alignment=:l, tf=tf);
+    strs = map(string, split(str, '\n'));
+    prepstrs = vcat(strs[1],strs[4:end]);
+    cleanstrs = map(x->x[2:end-1], prepstrs);
+    csv  = join(cleanstrs, '\n');
+
+    thisdir, csv
+end
+
+
+# sf_float_strs = map(v->map(x->@sprintf("%a",x)), float_vals);
+
+sprintfa(x) = @sprintf("%a",x)
+
+function strprintfa(v::Vector{Vector{T}}) where {T}
+    res = []
+    for avec in v
+        t = map(x->sprintfa(x), avec)
+        push!(res, t)
+    end
+    res
+end
+
+
+
+
+
+
 
 function commondenoms(xs)
     qs = map(rationalize, xs)
@@ -11,7 +222,7 @@ function commondenoms(xs)
     dmax = round(Int,maximum(qds))
     qds2 = map(x->round(Int, dmax/x), qds)
     qns2 = qns .* qds2
-    res = map(x -> Rational(x,dmax), qns2)
+    res = map(x -> Rational(x,dmax), qns2)c
     map(x->(x,dmax), qns2)
 end
 

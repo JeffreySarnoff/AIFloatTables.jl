@@ -65,11 +65,11 @@ function floati(::Type{T}) where {T}
    (kind = (signed = is_signed(T), extended = is_extended(T), nvalues = nvalues(T)), 
     bits = (nbits = nbits(T), nbits_sig = nbits_sig(T),      # Bitwidth, Precision
             nbits_frac = nbits_frac(T), nbits_exp = nbits_exp(T)), 
-    mags = (nmags = nmagnitudes(T),nvalues_exp = nvalues_exp(T), 
-            nmags_frac = nmagnitudes_frac(T)),
-    parts = (nmags_prenormal = nmagnitudes_prenormal(T), 
-              nmags_normal = nmagnitudes_normal(T), 
-              nmags_subnormal = nmagnitudes_subnormal(T))
+    mags = (nmags = nmags(T),nvalues_exp = nvalues_exp(T), 
+            nmags_frac = nmags_frac(T)),
+    parts = (nmags_prenormal = nmags_prenormal(T), 
+              nmags_normal = nmags_normal(T), 
+              nmags_subnormal = nmags_subnormal(T))
    )
 end
 

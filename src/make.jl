@@ -1,22 +1,22 @@
 lo,hi = 2,15
 bitdir = [string("bits", bits) for bits in lo:hi]
 
-sfdir = s"C:\JuliaCon\AIFloats\signed\finite"
-sedir = s"C:\JuliaCon\AIFloats\signed\extended"
-ufdir = s"C:\JuliaCon\AIFloats\unsigned\finite"
-uedir = s"C:\JuliaCon\AIFloats\unsigned\extended"
+sfdir = s"C:\JuliaCon\AIFloats\base10\signed\finite"
+sedir = s"C:\JuliaCon\AIFloats\base10\signed\extended"
+ufdir = s"C:\JuliaCon\AIFloats\base10\unsigned\finite"
+uedir = s"C:\JuliaCon\AIFloats\base10\unsigned\extended"
 
-sfdirs = [""]
-sedirs = [""]
-ufdirs = [""]
-uedirs = [""]
+sfdirs10= [""]
+sedirs10= [""]
+ufdirs10= [""]
+uedirs10= [""]
 
-append!(sfdirs,[joinpath(sfdir, bit) for bit in bitdir])
-append!(sedirs,[joinpath(sedir, bit) for bit in bitdir])
-append!(ufdirs,[joinpath(ufdir, bit) for bit in bitdir])
-append!(uedirs,[joinpath(uedir, bit) for bit in bitdir])
+append!(sfdirs10,[joinpath(sfdir, bit) for bit in bitdir])
+append!(sedirs10,[joinpath(sedir, bit) for bit in bitdir])
+append!(ufdirs10,[joinpath(ufdir, bit) for bit in bitdir])
+append!(uedirs10,[joinpath(uedir, bit) for bit in bitdir])
 
-[map(mkpath, d) for d in [sfdirs, sedirs, ufdirs, uedirs]]
+[map(mkpath, d) for d in [sfdirs10, sedirs10, ufdirs10, uedirs10]]
 
 sfdir16 = s"C:\JuliaCon\AIFloats\base16\signed\finite"
 sedir16 = s"C:\JuliaCon\AIFloats\base16\signed\extended"

@@ -59,3 +59,84 @@ function config()
         mkpath(base10_sedir)
     end
 end
+
+basefile_dir = abspath(joinpath("C:/JuliaCon", "AIFloats"))
+
+function fullpath(is16, K, args...; P=0, ext=is16 ? ".csv" : ".csv")
+    dirpath = fulldir(is16, K, args)
+    sfx = suffix(args)
+    if !iszero(P)
+        fname = string("binary", K, "p", P, sfx, ext)
+    else     
+        fname = string("binary", K, sfx, ext)
+    end
+    !isdir(dirpath) && mkpath(dirpath)
+    abspath(joinpath(dirpath, fname))
+end
+
+function suffix(args...)
+    if :signed in args
+        sfx = "s"
+    else
+        sfx = "u"
+    end
+    if :finite in args
+        sfx = string(sfx, "f")
+    else
+        sfx = string(sfx, "e")
+    end
+    sfx
+end
+
+function fulldir(is16, K, args...; UnsignedFloat=false, SignedFloat=false, ExtendedFloat=false, FiniteFloat=false)
+    (:unsigned in args) && (UnsignedFloat=true;);
+    (:signed in args) && (SignedFloat=true;);
+    (:finite in args) && (FiniteFloat=true;);
+    (:extended in args) && (ExtendedFloat=true;);
+    # (; UnsignedFloat, SignedFloat, ExtendedFloat, FiniteFloat)
+    if is16
+        fullpath = joinpath(basefile_dir, "base16")
+    else
+        fullpath = joinpath(basefile_dir, "base10")
+    end
+    if SignedFloat
+        fullpath = joinpath(fullpath, "signed")
+    else
+        fullpath = joinpath(fullpath, "unsigned")
+    end
+    if FiniteFloat
+        fullpath = joinpath(fullpath, "finite")
+    else
+        fullpath = joinpath(fullpath, "extended")
+    end
+    fullpath = joinpath(fullpath, string("bits",K))
+    fullpath
+end
+
+for K in 2:4
+    println(K)
+    for signedness in (:unsigned, :signed)
+        for domain in (:finite, :extended)
+            for is16 in (true, false)
+                if is16
+                    filedir = joinpath(basefile_dir, "base16")
+                else
+                    filedir = joinpath(basefile_dir, "base10")
+                end
+                println(filedir)
+                if signedness == :signed
+                    filedir = joinpath(filedir, "signed")
+                else
+                    filedir = joinpath(filedir, "unsigned")
+                end
+                if domain == :finite
+                    filedir = joinpath(filedir, "finite")
+                else
+                    filedir = joinpath(filedir, "extended")
+                end
+                thisdir, csv = makecsv(K, signedness, domain; is16)
+                if is16
+                    filename = string("binary",K,".16.csv")
+                else
+                    filename = string("binary",K,".10.csv")
+                end

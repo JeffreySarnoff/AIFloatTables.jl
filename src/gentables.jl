@@ -56,6 +56,13 @@ function genhexcolnames(bits, sigbits=0; SignedFloat=false, UnsignedFloat=false,
     ["code", [prefix * string(i) * suffix for i in 1:sigbitsmax]...]
 end
 
+function gendeccolnames(bits, sigbits=0; SignedFloat=false, UnsignedFloat=false, FiniteFloat=false, ExtendedFloat=false)
+    sigbitsmax = bits - SignedFloat
+    prefix = "binary" * uppercase(string(bits; base=10)) * "p"
+    suffix = (SignedFloat ? "s" : "u") * (FiniteFloat ? "f" : "e")
+    ["code", [prefix * string(i) * suffix for i in 1:sigbitsmax]...]
+end
+
 function gencolsyms(bits, sigbits=0; SignedFloat=false, UnsignedFloat=false, FiniteFloat=false, ExtendedFloat=false)
     colnames = gencolnames(bits, sigbits; SignedFloat, UnsignedFloat, FiniteFloat, ExtendedFloat)
     Tuple(map(Symbol, colnames))
@@ -66,7 +73,7 @@ function gencoltypes(bits, sigbits=0; SignedFloat=false, UnsignedFloat=false, Fi
     if SignedFloat
         if bits <= 12
             cf = Float64
-            cfs = fill(cf, bits - SignedFloat)
+            cfs = Tuple(fill(cf, bits - SignedFloat))
         elseif bits == 13
             cfs = Tuple([BigFloat, fill(Float64, 11)...])
         elseif bits == 14
@@ -77,7 +84,7 @@ function gencoltypes(bits, sigbits=0; SignedFloat=false, UnsignedFloat=false, Fi
     else
         if bits <= 11
             cf = Float64
-            cfs = fill(cf, bits - SignedFloat)
+            cfs = Tuple(fill(cf, bits - SignedFloat))
         elseif bits == 12
             cfs = Tuple([BigFloat, fill(Float64, 11)...])
         elseif bits == 13
@@ -251,13 +258,13 @@ about_exponents(T) = (bias = expBias(T), exponents = 1 + AIFloats.expMax(T) - AI
             exponent_min = AIFloats.expMin(T), exponent_max = AIFloats.expMax(T))
 
 about_prenormals(T) =
-            (prenormal_magnitudes = nPrenormalMagnitudes(T),
-             subnormal_magnitudes = nSubnormalMagnitudes(T), 
+            (prenormal_mags = nPrenormalMagnitudes(T),
+             subnormal_mags = nSubnormalMagnitudes(T), 
              subnormal_values = AIFloats.nSubnormalValues(T),
              subnormal_min = subnormalMagnitudeMin(T), subnormal_max = subnormalMagnitudeMax(T))
 
 about_normals(T) =
-            (normal_magnitudes = nNormalMagnitudes(T), normal_values = AIFloats.nNormalValues(T),
+            (normal_mags = nNormalMagnitudes(T), normal_values = AIFloats.nNormalValues(T),
              normal_min = normalMagnitudeMin(T), normal_max = normalMagnitudeMax(T))
 
 about(T) = (
