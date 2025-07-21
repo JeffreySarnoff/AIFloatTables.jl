@@ -35,8 +35,9 @@ cd("C:/github/AIFloatTables.jl/src")
 # include("config2.jl")
 
 basefile_dir = abspath(
-    joinpath("C:/JuliaCon", "2025", "AIFloats"))
-include("config3.jl")
+    joinpath("C:/JuliaCon", "AIFloats"))
+
+ include("config.jl")
 
 include("gentables.jl")
 

@@ -17,69 +17,6 @@ float64 works for
     bits=14, sigbits=4:14
     bits=15, sigbits=5:15
 
-float32 works for 
-:signed 
-    bits=2:9
-    bits=10, sigbits=2:9
-    bits=11, sigbits=3:10
-    bits=12, sigbits=4:11
-    bits=13, sigbits=5:12
-    bits=14, sigbits=6:13
-    bits=15, sigbits=7:14   
-:unsigned 
-    bits=2:8
-    bits=9,  sigbits=2:9
-    bits=10, sigbits=3:10
-    bits=11, sigbits=4:11
-    bits=12, sigbits=5:12
-    bits=13, sigbits=6:13
-    bits=14, sigbits=7:14
-    bits=15, sigbits=8:15   
-    
-float16 works for 
-:signed 
-    bits=2:6
-    bits=7,  sigbits=2:6
-    bits=8,  sigbits=3:7
-    bits=9,  sigbits=4:8
-    bits=10, sigbits=5:9
-    bits=11, sigbits=6:10
-    bits=12, sigbits=7:11
-    bits=13, none
-    bits=14, none
-    bits=15, none
-:unsigned 
-    bits=2:5
-    bits=6,  sigbits=2:6
-    bits=7,  sigbits=3:7
-    bits=8,  sigbits=4:8
-    bits=9,  sigbits=5:9
-    bits=10, sigbits=6:10
-    bits=11, sigbits=7:11
-    bits=12, none
-    bits=13, none
-    bits=14, none
-    bits=15, none
-
-BFloat16 works for 
-:signed 
-    bits=2:9
-    bits=10, none
-    bits=11, none
-    bits=12, none
-    bits=13, none
-    bits=14, none
-    bits=15, none
-:unsigned 
-    bits=2:8
-    bits= 9, none
-    bits=10, none
-    bits=11, none
-    bits=12, none
-    bits=13, none
-    bits=14, none
-    bits=15, none
-
 =#
 
 function gencolumns(bits, sigbits=0; SignedFloat=false, UnsignedFloat=false, FiniteFloat=false, ExtendedFloat=false)
@@ -125,11 +62,47 @@ function gencolsyms(bits, sigbits=0; SignedFloat=false, UnsignedFloat=false, Fin
 end
 
 function gencoltypes(bits, sigbits=0; SignedFloat=false, UnsignedFloat=false, FiniteFloat=false, ExtendedFloat=false)
-    c1 = bits <= 8 ? U8 : U16
-    sz = sizeof(typeforfloat(bits))
-    cf = sz == 4 ? V32 : (sz == 8 ? V64 : V128)
-    Tuple{[c1, fill(cf, bits - SignedFloat)...]...}
+    c1 = bits <= 8 ? UInt8 : UInt16
+    if SignedFloat
+        if bits <= 12
+            cf = Float64
+            cfs = fill(cf, bits - SignedFloat)
+        elseif bits == 13
+            cfs = Tuple([BigFloat, fill(Float64, 11)...])
+        elseif bits == 14
+            cfs = Tuple([fill(BigFloat, 2)..., fill(Float64, 10)...])
+        elseif bits == 15
+            cfs = Tuple([fill(BigFloat, 3)..., fill(Float64, 9)...])
+        end
+    else
+        if bits <= 11
+            cf = Float64
+            cfs = fill(cf, bits - SignedFloat)
+        elseif bits == 12
+            cfs = Tuple([BigFloat, fill(Float64, 11)...])
+        elseif bits == 13
+            cfs = Tuple([fill(BigFloat, 2)..., fill(Float64, 11)...])
+        elseif bits == 15
+            cfs = Tuple([fill(BigFloat, 3)..., fill(Float64, 12)...])
+        end
+    end
+    cfs
 end
+
+#=
+float64 works for 
+:signed 
+    bits=2:12
+    bits=13, sigbits=3:12
+    bits=14, sigbits=4:13
+    bits=15, sigbits=5:14
+:unsigned 
+    bits=2:11
+    bits=12, sigbits=2:12
+    bits=13, sigbits=3:13
+    bits=14, sigbits=4:14
+    bits=15, sigbits=5:15
+=#
 
 code_formatter(bits) = bits <= 8 ? ft_printf("0x%002x", [1]) : ft_printf("0x%00004x", [1])
 float_format(col) = ft_round(15, col)
@@ -251,14 +224,12 @@ function genbigcsv(bits, sigbits=0; filedir, filename, SignedFloat=false, Unsign
     end
 end
 
-function genhexcsv(bits, sigbits=0; filedir, filename, SignedFloat=false, UnsignedFloat=false, FiniteFloat=false, ExtendedFloat=false)
+function gen_base16_csv(bits, sigbits=0; filedir, filename, SignedFloat=false, UnsignedFloat=false, FiniteFloat=false, ExtendedFloat=false)
     sigbitsmax = bits - SignedFloat
-    colsyms = gencolsyms(bits; SignedFloat, UnsignedFloat, FiniteFloat, ExtendedFloat)
-    coltypes = gencoltypes(bits; SignedFloat, UnsignedFloat, FiniteFloat, ExtendedFloat)
     colvalues = gencolumns(bits; SignedFloat, UnsignedFloat, FiniteFloat, ExtendedFloat)
-    vals = (colvalues.code, colvalues.values...)
+    vals = (colvalues.encoding, colvalues.values...)
     fmts = genhexformats(bits; SignedFloat, UnsignedFloat, FiniteFloat, ExtendedFloat)
-
+    colsyms = gencolsyms(bits;  SignedFloat, UnsignedFloat, FiniteFloat, ExtendedFloat)
     nt4table = NamedTuple{colsyms, coltypes}
     nt = nt4table(vals)
     coltable = columntable(nt)
