@@ -1,98 +1,58 @@
-bitdir = [string("bits", bits) for bits in lo:hi]
+#=
+formed in config
 
-sfdir = s"C:\JuliaCon\AIFloats\signed\finite"
-sedir = s"C:\JuliaCon\AIFloats\signed\extended"
-ufdir = s"C:\JuliaCon\AIFloats\unsigned\finite"
-uedir = s"C:\JuliaCon\AIFloats\unsigned\extended"
+ hex_sfinite_dirs,  hex_sextended_dirs,
+ hex_ufinite_dirs,  hex_uextended_dirs,
 
-sfdirs = [""]
-sedirs = [""]
-ufdirs = [""]
-uedirs = [""]
+ dec_sfinite_dirs,  dec_sextended_dirs,
+ dec_ufinite_dirs,  dec_uextended_dirs,
 
-append!(sfdirs,[joinpath(sfdir, bit) for bit in bitdir])
-append!(sedirs,[joinpath(sedir, bit) for bit in bitdir])
-append!(ufdirs,[joinpath(ufdir, bit) for bit in bitdir])
-append!(uedirs,[joinpath(uedir, bit) for bit in bitdir])
+ '''
+julia>     hex_sfinite_dirs
+15-element Vector{String}:
+ ""
+ "C:\\JuliaCon\\AIFloats\\base16\\signed\\finite\\bits2"
+ "C:\\JuliaCon\\AIFloats\\base16\\signed\\finite\\bits3"
+ ⋮
+ "C:\\JuliaCon\\AIFloats\\base16\\signed\\finite\\bits14"
+ "C:\\JuliaCon\\AIFloats\\base16\\signed\\finite\\bits15"
+'''
 
-[map(mkpath, d) for d in [sfdirs, sedirs, ufdirs, uedirs]]
+=#
 
-sfdir16 = s"C:\JuliaCon\AIFloats\base16\signed\finite"
-sedir16 = s"C:\JuliaCon\AIFloats\base16\signed\extended"
-ufdir16 = s"C:\JuliaCon\AIFloats\base16\unsigned\finite"
-uedir16 = s"C:\JuliaCon\AIFloats\base16\unsigned\extended"
 
-sfdirs16 = [""]
-sedirs16 = [""]
-ufdirs16 = [""]
-uedirs16 = [""]
+FloatIds = Dict()
+FloatIds["sf"] = (; SignedFloat=true, UnsignedFloat=false, ExtendedFloat=false, FiniteFloat=true)
+FloatIds["se"] = (; SignedFloat=true, UnsignedFloat=false, ExtendedFloat=true, FiniteFloat=false)
+FloatIds["uf"] = (; SignedFloat=false, UnsignedFloat=true, ExtendedFloat=false, FiniteFloat=true)
+FloatIds["ue"] = (; SignedFloat=false, UnsignedFloat=true, ExtendedFloat=true, FiniteFloat=false)
 
-append!(sfdirs16,[joinpath(sfdir16, bit) for bit in bitdir])
-append!(sedirs16,[joinpath(sedir16, bit) for bit in bitdir])
-append!(ufdirs16,[joinpath(ufdir16, bit) for bit in bitdir])
-append!(uedirs16,[joinpath(uedir16, bit) for bit in bitdir])
-
-[map(mkpath, d) for d in [sfdirs16, sedirs16, ufdirs16, uedirs16]]
-
-SignedFloat = ExtendedFloat = FiniteFloat = UnsignedFloat = true
-
-lo, hi = 2,4
-
-for i in lo:hi
-    suffix = "sf"
-    filedir = sfdirs[i]
-    filename = string("binary",i,suffix,".csv")
-    gencsv(i; filedir, filename, SignedFloat, FiniteFloat)
-end
+function generate_files(dirs; minbits, maxbits)
+    dirs10 = dirs.decimaldirs
+    dirs16 = dirs.hexadecimaldirs
     
-for i in lo:hi
-    suffix = "se"
-    filedir = sedirs[i]
-    filename = string("binary",i,suffix,".csv")
-    gencsv(i; filedir, filename, SignedFloat, ExtendedFloat)
-endv
+    for bits in minbits:maxbits
+        println("radix 10 bits = $bits")
+        for (sfx, filedir) in (("sf", dirs10.sfdir),
+                               ("se", dirs10.sedir),
+                               ("uf", dirs10.ufdir),
+                               ("ue", dirs10.uedir))
+            filename = string("binary", bits, sfx, ".dec.csv")
+            SignedFloat, UnsignedFloat, ExtendedFloat, FiniteFloat = FloatIds[sfx]    
+            gen_base10_csv(bits; filedir, filename, SignedFloat, UnsignedFloat, ExtendedFloat, FiniteFloat)
+        end
+    end
 
-for i in lo:hi
-    suffix = "uf"
-    filedir = ufdirs[i]
-    filename = string("binary",i,suffix,".csv")
-    gencsv(i; filedir, filename, UnsignedFloat, FiniteFloat)
-end
-    
-for i in lo:hi
-    suffix = "ue"
-    filedir = uedirs[i]
-    filename = string("binary",i,suffix,".csv")
-    gencsv(i; filedir, filename, SignedFloat, ExtendedFloat)
-end
+    for bits in minbits:maxbits
+        println("radix 16 bits = $bits")
+        for (sfx, filedir) in (("sf", dirs16.sfdir),
+                               ("se", dirs16.sedir),
+                               ("uf", dirs16.ufdir),
+                               ("ue", dirs16.uedir))
+            filename = string("binary", bits, sfx, ".hex.csv")
+            SignedFloat, UnsignedFloat, ExtendedFloat, FiniteFloat = FloatIds[sfx]    
+            gen_base16_csv(bits; filedir, filename, SignedFloat, UnsignedFloat, ExtendedFloat, FiniteFloat)
+        end
+    end
 
-# base16
-    
-for i in lo:hi
-    suffix = "sf"
-    filedir = sfdirs16[i]
-    filename = string("binary",i,suffix,".csv")
-    gen_base16_csv(i; filedir, filename, SignedFloat, FiniteFloat)
 end
-    
-for i in lo:hi
-    suffix = "se"
-    filedir = sedirs16[i]
-    filename = string("binary",i,suffix,".csv")
-    gen_base16_csv(i; filedir, filename, SignedFloat, ExtendedFloat)
-end
-
-for i in lo:hi
-    suffix = "uf"
-    filedir = ufdirs16[i]
-    filename = string("binary",i,suffix,".csv")
-    gen_base16_csv(i; filedir, filename, UnsignedFloat, FiniteFloat)
-end
-    
-for i in lo:hi
-    suffix = "ue"
-    filedir = uedirs16[i]
-    filename = string("binary",i,suffix,".csv")
-    gen_base16_csv(i; filedir, filename, SignedFloat, ExtendedFloat)
-end
-
