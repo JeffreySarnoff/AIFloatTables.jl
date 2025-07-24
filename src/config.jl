@@ -19,12 +19,22 @@ function config()
     dec_sextended_dir = joinpath(dec_signed_dir, "extended")
     dec_ufinite_dir = joinpath(dec_unsigned_dir, "finite")
     dec_uextended_dir = joinpath(dec_unsigned_dir, "extended")
-    
+        
+    dec_sfinite_dirs = [""]
+    dec_sextended_dirs = [""]
+    dec_ufinite_dirs = [""]
+    dec_uextended_dirs = [""]
+
     hex_sfinite_dir = joinpath(hex_signed_dir, "finite")
     hex_sextended_dir = joinpath(hex_signed_dir, "extended")
     hex_ufinite_dir = joinpath(hex_unsigned_dir, "finite")
     hex_uextended_dir = joinpath(hex_unsigned_dir, "extended")
     
+    hex_sfinite_dirs = [""]
+    hex_sextended_dirs = [""]
+    hex_ufinite_dirs = [""]
+    hex_uextended_dirs = [""]
+
     for bits in 2:15
         decbits = string(bits)
         println("bits = $decbits")
